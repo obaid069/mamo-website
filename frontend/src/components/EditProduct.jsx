@@ -30,7 +30,8 @@ function EditProduct() {
     const fetchData = async () => {
       try {
         // Fetch product details
-        const productRes = await axios.get(`${import.meta.env.VITE_API_URL}/products/${id}`);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const productRes = await axios.get(`${API_URL}/products/${id}`);
         setProduct({
           ...productRes.data,
           tags: productRes.data.tags || []
@@ -42,7 +43,7 @@ function EditProduct() {
         }
 
         // Fetch categories
-        const categoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/categories`);
+        const categoriesRes = await axios.get(`${API_URL}/categories`);
         setCategories(categoriesRes.data);
       } catch (error) {
         console.error('Fetch error:', error);
@@ -106,8 +107,9 @@ function EditProduct() {
         });
 
         try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
           const uploadResponse = await axios.post(
-            `${import.meta.env.VITE_API_URL}/upload`,
+            `${API_URL}/products/upload`,
             formData,
             {
               headers: {
@@ -147,8 +149,9 @@ function EditProduct() {
 
       console.log('Updating product with data:', updateData);
 
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/products/${id}`, 
+        `${API_URL}/products/${id}`,
         updateData,
         {
           headers: { 
@@ -347,7 +350,7 @@ function EditProduct() {
                           alt={image.alt || `Product image ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border shadow-sm"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/200x150/e2e8f0/64748b?text=Image+${index + 1}`;
+                            e.target.src = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlICR7aW5kZXggKyAxfTwvdGV4dD48L3N2Zz4=`;
                           }}
                         />
                         <button

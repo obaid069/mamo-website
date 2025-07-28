@@ -7,7 +7,8 @@ function AdminProductCard({ product, onDelete }) {
   const getImageSrc = () => {
     // Check if product and images exist
     if (!product?.images || product.images.length === 0) {
-      return `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product?.name?.substring(0, 15) || 'Product')}`;
+      const productName = product?.name?.substring(0, 15) || 'Product';
+      return `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#e2e8f0"/><text x="50%" y="50%" font-family="Arial" font-size="16" fill="#64748b" text-anchor="middle" dy=".3em">${productName}</text></svg>`)}`;
     }
 
     const firstImage = product.images[0];
@@ -30,7 +31,8 @@ function AdminProductCard({ product, onDelete }) {
     }
     
     // Final fallback
-    return `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
+    const productName = product.name.substring(0, 15);
+    return `data:image/svg+xml;base64,${btoa(`<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#e2e8f0"/><text x="50%" y="50%" font-family="Arial" font-size="16" fill="#64748b" text-anchor="middle" dy=".3em">${productName}</text></svg>`)}`;
   };
 
   return (

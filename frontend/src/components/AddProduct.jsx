@@ -279,7 +279,7 @@ function AddProduct() {
                         alt={`Preview ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg border shadow-sm"
                         onError={(e) => {
-                          e.target.src = `https://via.placeholder.com/200x150/e2e8f0/64748b?text=Invalid+URL`;
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkludmFsaWQgVVJMPC90ZXh0Pjwvc3ZnPg==';
                         }}
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
