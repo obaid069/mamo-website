@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 
 // Optimized AdminProductCard component with memoization
-const AdminProductCard = memo(({ product, onDelete }) => {
+function AdminProductCard({ product, onDelete }) {
   // Optimized image handling with better fallback
   const getImageSrc = () => {
     // Check if product and images exist
