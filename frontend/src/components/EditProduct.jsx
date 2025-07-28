@@ -26,7 +26,7 @@ function EditProduct() {
     }
   });
   const [categories, setCategories] = useState([]);
-  const [images, setImages] = useState([]);
+  const [imageUrls, setImageUrls] = useState(['']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -48,6 +48,14 @@ function EditProduct() {
             ageRange: ''
           }
         });
+        
+        // Set image URLs from product data
+        if (productRes.data.images && productRes.data.images.length > 0) {
+          const urls = productRes.data.images.map(img => 
+            typeof img === 'object' ? img.url : img
+          ).filter(url => url);
+          setImageUrls(urls.length > 0 ? urls : ['']);
+        }
 
         // Fetch categories
         const categoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/categories`);
@@ -98,6 +106,31 @@ function EditProduct() {
     }));
   };
 
+  // Image URL handlers
+  const handleImageUrlChange = (index, value) => {
+    const newUrls = [...imageUrls];
+    newUrls[index] = value;
+    setImageUrls(newUrls);
+  };
+
+  const addImageUrl = () => {
+    setImageUrls([...imageUrls, '']);
+  };
+
+  const removeImageUrl = (index) => {
+    if (imageUrls.length > 1) {
+      const newUrls = imageUrls.filter((_, i) => i !== index);
+      setImageUrls(newUrls);
+    }
+  };
+
+  const getImagePreview = (url) => {
+    if (!url || !url.startsWith('http')) {
+      return `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent('Add Image URL')}`;
+    }
+    return url;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -112,7 +145,8 @@ function EditProduct() {
         return;
       }
 
-      // Prepare data for update (exclude images array for now)
+      // Prepare data for update including images
+      const validImageUrls = imageUrls.filter(url => url && url.trim() !== '');
       const updateData = {
         name: product.name,
         description: product.description,
@@ -125,7 +159,8 @@ function EditProduct() {
         isFeatured: product.isFeatured,
         isActive: product.isActive,
         tags: product.tags,
-        specifications: product.specifications
+        specifications: product.specifications,
+        images: validImageUrls
       };
 
       console.log('Updating product with data:', updateData);
@@ -312,6 +347,69 @@ function EditProduct() {
                 placeholder="e.g., organic, anti-aging, moisturizer"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+            </div>
+
+            {/* Product Images */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">📸 Product Images</h3>
+              <div className="space-y-4">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
+                    {/* Image Preview */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src={getImagePreview(url)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border"
+                        onError={(e) => {
+                          e.target.src = `https://via.placeholder.com/100x100/e2e8f0/64748b?text=Image+${index + 1}`;
+                        }}
+                      />
+                    </div>
+                    
+                    {/* URL Input */}
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Image URL {index + 1}
+                      </label>
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={(e) => handleImageUrlChange(index, e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={() => removeImageUrl(index)}
+                      disabled={imageUrls.length === 1}
+                      className={`px-3 py-2 rounded-md font-medium transition-colors ${
+                        imageUrls.length === 1
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      }`}
+                    >
+                      🗑️ Remove
+                    </button>
+                  </div>
+                ))}
+                
+                {/* Add Image Button */}
+                <button
+                  type="button"
+                  onClick={addImageUrl}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  ➕ Add Another Image URL
+                </button>
+                
+                <div className="text-sm text-gray-500">
+                  💡 <strong>Tip:</strong> Use direct image URLs from services like Imgur, Cloudinary, or other image hosting services.
+                </div>
+              </div>
             </div>
 
             {/* Specifications */}

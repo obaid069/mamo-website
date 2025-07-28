@@ -1,24 +1,33 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 
-function AdminProductCard({ product, onDelete }) {
-  // Handle image display with fallback
+// Optimized AdminProductCard component with memoization
+const AdminProductCard = memo(({ product, onDelete }) => {
+  // Optimized image handling with better fallback
   const getImageSrc = () => {
-    if (product.images && product.images.length > 0) {
-      // If images is an array of objects with url property
-      if (typeof product.images[0] === 'object' && product.images[0].url) {
-        // Check if it's a full URL or relative path
-        const imageUrl = product.images[0].url;
-        return imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${imageUrl}`;
-      }
-      // If images is an array of strings
-      if (typeof product.images[0] === 'string') {
-        const imageUrl = product.images[0];
-        return imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${imageUrl}`;
-      }
+    // Check if product and images exist
+    if (!product?.images || product.images.length === 0) {
+      return `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product?.name?.substring(0, 15) || 'Product')}`;
     }
-    // Fallback to a data URL image
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZmJlN2Y2Ii8+PHRleHQgeD0iNTAlIiB5PSI0NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0OCIgZmlsbD0iI2Y5YThmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPvCflLE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2Y5YThmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkFkbWluIFByb2R1Y3Q8L3RleHQ+PC9zdmc+';
+
+    const firstImage = product.images[0];
+    
+    // Handle object format {url: '', alt: ''}
+    if (typeof firstImage === 'object' && firstImage?.url) {
+      return firstImage.url.startsWith('http') 
+        ? firstImage.url 
+        : `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
+    }
+    
+    // Handle string format
+    if (typeof firstImage === 'string') {
+      return firstImage.startsWith('http') 
+        ? firstImage 
+        : `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
+    }
+    
+    // Final fallback
+    return `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
   };
 
   return (

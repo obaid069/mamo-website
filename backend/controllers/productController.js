@@ -167,6 +167,29 @@ const updateProduct = async (req, res) => {
       product.tags = req.body.tags || product.tags;
       product.isFeatured = req.body.isFeatured !== undefined ? req.body.isFeatured : product.isFeatured;
       product.isActive = req.body.isActive !== undefined ? req.body.isActive : product.isActive;
+      
+      // Handle image updates
+      if (req.body.images && Array.isArray(req.body.images)) {
+        const processedImages = req.body.images
+          .filter(img => img && img.trim() !== '') // Remove empty URLs
+          .map(img => {
+            if (typeof img === 'string') {
+              return {
+                url: img.startsWith('http') ? img : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+                alt: product.name
+              };
+            }
+            return {
+              url: img.url && img.url.startsWith('http') ? img.url : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+              alt: img.alt || product.name
+            };
+          });
+        
+        product.images = processedImages.length > 0 ? processedImages : [{
+          url: `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+          alt: product.name
+        }];
+      }
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);
