@@ -103,6 +103,25 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Category not found' });
     }
 
+    // Process images - ensure they are full URLs for Vercel compatibility
+    const processedImages = images && images.length > 0 ? images.map(img => {
+      if (typeof img === 'string') {
+        // If it's just a URL string, convert to object format
+        return {
+          url: img.startsWith('http') ? img : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+          alt: name
+        };
+      }
+      // If it's already an object, ensure URL is valid
+      return {
+        url: img.url && img.url.startsWith('http') ? img.url : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+        alt: img.alt || name
+      };
+    }) : [{
+      url: `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+      alt: name
+    }];
+
     const product = new Product({
       name,
       description,
@@ -114,7 +133,7 @@ const createProduct = async (req, res) => {
       countInStock,
       specifications,
       tags,
-      images: images || [],
+      images: processedImages,
       isActive: isActive !== undefined ? isActive : true,
       isFeatured: isFeatured !== undefined ? isFeatured : false,
       createdBy: req.user._id,

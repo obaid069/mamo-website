@@ -15,6 +15,7 @@
     "test:product": "node test-add-product.js",
     "check:db": "node check-db.js",
     "fix:admin": "node fix-admin.js",
+    "fix:images": "node fix-product-images.js",
     "seed": "node seeder.js",
     "seed:destroy": "node seeder.js -d"
   },
