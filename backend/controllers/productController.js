@@ -90,7 +90,6 @@ const createProduct = async (req, res) => {
       category,
       brand,
       countInStock,
-      specifications,
       tags,
       images,
       isActive,
@@ -131,7 +130,6 @@ const createProduct = async (req, res) => {
       category,
       brand,
       countInStock,
-      specifications,
       tags,
       images: processedImages,
       isActive: isActive !== undefined ? isActive : true,
@@ -163,7 +161,6 @@ const updateProduct = async (req, res) => {
       product.category = req.body.category || product.category;
       product.brand = req.body.brand || product.brand;
       product.countInStock = req.body.countInStock || product.countInStock;
-      product.specifications = req.body.specifications || product.specifications;
       product.tags = req.body.tags || product.tags;
       product.isFeatured = req.body.isFeatured !== undefined ? req.body.isFeatured : product.isFeatured;
       product.isActive = req.body.isActive !== undefined ? req.body.isActive : product.isActive;

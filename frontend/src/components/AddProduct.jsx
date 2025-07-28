@@ -81,6 +81,7 @@ function AddProduct() {
     setSuccess('');
     setLoading(true);
 
+    // Upload images first
     const uploaded = await handleImageUpload();
 
     // Validation
@@ -131,6 +132,7 @@ function AddProduct() {
       setCategory('');
       setCountInStock('');
       setImages([]);
+      setUploadedImages([]);
       
       // Navigate after 2 seconds
       setTimeout(() => {
@@ -255,8 +257,9 @@ function AddProduct() {
             </select>
           </div>
 
+          {/* Product Images */}
           <div>
-            <label className="block text-gray-700 font-semibold mb-2">Images (Optional)</label>
+            <label className="block text-gray-700 font-semibold mb-2">Product Images</label>
             <input
               type="file"
               multiple
@@ -265,6 +268,11 @@ function AddProduct() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             />
             <p className="text-sm text-gray-500 mt-1">Multiple images select kar sakte hain</p>
+            {uploadingImages && (
+              <div className="mt-2 text-blue-600">
+                <span>Images upload ho rahi hain...</span>
+              </div>
+            )}
           </div>
           
           <div className="flex space-x-4">

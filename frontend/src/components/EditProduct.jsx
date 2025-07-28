@@ -16,19 +16,14 @@ function EditProduct() {
     category: '',
     isFeatured: false,
     isActive: true,
-    tags: [],
-    specifications: {
-      weight: '',
-      dimensions: '',
-      ingredients: [],
-      skinType: '',
-      ageRange: ''
-    }
+    tags: []
   });
   const [categories, setCategories] = useState([]);
-  const [imageUrls, setImageUrls] = useState(['']);
+  const [images, setImages] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
@@ -39,22 +34,12 @@ function EditProduct() {
         const productRes = await axios.get(`${import.meta.env.VITE_API_URL}/products/${id}`);
         setProduct({
           ...productRes.data,
-          tags: productRes.data.tags || [],
-          specifications: productRes.data.specifications || {
-            weight: '',
-            dimensions: '',
-            ingredients: [],
-            skinType: '',
-            ageRange: ''
-          }
+          tags: productRes.data.tags || []
         });
         
-        // Set image URLs from product data
+        // Set existing images for display
         if (productRes.data.images && productRes.data.images.length > 0) {
-          const urls = productRes.data.images.map(img => 
-            typeof img === 'object' ? img.url : img
-          ).filter(url => url);
-          setImageUrls(urls.length > 0 ? urls : ['']);
+          setUploadedImages(productRes.data.images);
         }
 
         // Fetch categories
@@ -76,17 +61,6 @@ function EditProduct() {
     }));
   };
 
-  const handleSpecificationChange = (e) => {
-    const { name, value } = e.target;
-    setProduct(prev => ({
-      ...prev,
-      specifications: {
-        ...prev.specifications,
-        [name]: value
-      }
-    }));
-  };
-
   const handleTagsChange = (e) => {
     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
     setProduct(prev => ({
@@ -95,40 +69,49 @@ function EditProduct() {
     }));
   };
 
-  const handleIngredientsChange = (e) => {
-    const ingredients = e.target.value.split(',').map(ing => ing.trim()).filter(ing => ing);
-    setProduct(prev => ({
-      ...prev,
-      specifications: {
-        ...prev.specifications,
-        ingredients
+  const handleImageUpload = async () => {
+    if (images.length === 0) return uploadedImages; // Return existing images if no new images
+    setUploadingImages(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Login pehle karo! Token missing hai.');
       }
-    }));
-  };
 
-  // Image URL handlers
-  const handleImageUrlChange = (index, value) => {
-    const newUrls = [...imageUrls];
-    newUrls[index] = value;
-    setImageUrls(newUrls);
-  };
+      const uploaded = [];
+      for (const image of images) {
+        const formData = new FormData();
+        formData.append('image', image);
 
-  const addImageUrl = () => {
-    setImageUrls([...imageUrls, '']);
-  };
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/products/upload`, formData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
 
-  const removeImageUrl = (index) => {
-    if (imageUrls.length > 1) {
-      const newUrls = imageUrls.filter((_, i) => i !== index);
-      setImageUrls(newUrls);
+        uploaded.push({
+          url: response.data.image,
+          alt: product.name
+        });
+      }
+
+      // Combine existing images with new uploaded images
+      const combinedImages = [...uploadedImages, ...uploaded];
+      setUploadedImages(combinedImages);
+      return combinedImages;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      setError(error.message || 'Image upload mein masla hua!');
+      return uploadedImages; // Return existing images on error
+    } finally {
+      setUploadingImages(false);
     }
   };
 
-  const getImagePreview = (url) => {
-    if (!url || !url.startsWith('http')) {
-      return `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent('Add Image URL')}`;
-    }
-    return url;
+  const removeExistingImage = (index) => {
+    const newImages = uploadedImages.filter((_, i) => i !== index);
+    setUploadedImages(newImages);
   };
 
   const handleSubmit = async (e) => {
@@ -145,8 +128,10 @@ function EditProduct() {
         return;
       }
 
+      // First upload new images if any
+      const finalImages = await handleImageUpload();
+
       // Prepare data for update including images
-      const validImageUrls = imageUrls.filter(url => url && url.trim() !== '');
       const updateData = {
         name: product.name,
         description: product.description,
@@ -159,8 +144,7 @@ function EditProduct() {
         isFeatured: product.isFeatured,
         isActive: product.isActive,
         tags: product.tags,
-        specifications: product.specifications,
-        images: validImageUrls
+        images: finalImages
       };
 
       console.log('Updating product with data:', updateData);
@@ -352,133 +336,77 @@ function EditProduct() {
             {/* Product Images */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">📸 Product Images</h3>
-              <div className="space-y-4">
-                {imageUrls.map((url, index) => (
-                  <div key={index} className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
-                    {/* Image Preview */}
-                    <div className="flex-shrink-0">
-                      <img
-                        src={getImagePreview(url)}
-                        alt={`Preview ${index + 1}`}
-                        className="w-24 h-24 object-cover rounded-lg border"
-                        onError={(e) => {
-                          e.target.src = `https://via.placeholder.com/100x100/e2e8f0/64748b?text=Image+${index + 1}`;
-                        }}
-                      />
-                    </div>
-                    
-                    {/* URL Input */}
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Image URL {index + 1}
-                      </label>
-                      <input
-                        type="url"
-                        value={url}
-                        onChange={(e) => handleImageUrlChange(index, e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    
-                    {/* Remove Button */}
-                    <button
-                      type="button"
-                      onClick={() => removeImageUrl(index)}
-                      disabled={imageUrls.length === 1}
-                      className={`px-3 py-2 rounded-md font-medium transition-colors ${
-                        imageUrls.length === 1
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
-                    >
-                      🗑️ Remove
-                    </button>
-                  </div>
-                ))}
-                
-                {/* Add Image Button */}
-                <button
-                  type="button"
-                  onClick={addImageUrl}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
-                >
-                  ➕ Add Another Image URL
-                </button>
-                
-                <div className="text-sm text-gray-500">
-                  💡 <strong>Tip:</strong> Use direct image URLs from services like Imgur, Cloudinary, or other image hosting services.
-                </div>
-              </div>
-            </div>
-
-            {/* Specifications */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Product Specifications</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Weight</label>
-                  <input
-                    type="text"
-                    name="weight"
-                    value={product.specifications.weight}
-                    onChange={handleSpecificationChange}
-                    placeholder="e.g., 50ml, 100g"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Dimensions</label>
-                  <input
-                    type="text"
-                    name="dimensions"
-                    value={product.specifications.dimensions}
-                    onChange={handleSpecificationChange}
-                    placeholder="e.g., 10cm x 5cm x 3cm"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Skin Type</label>
-                  <select
-                    name="skinType"
-                    value={product.specifications.skinType}
-                    onChange={handleSpecificationChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select Skin Type</option>
-                    <option value="all">All Skin Types</option>
-                    <option value="dry">Dry Skin</option>
-                    <option value="oily">Oily Skin</option>
-                    <option value="combination">Combination Skin</option>
-                    <option value="sensitive">Sensitive Skin</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Age Range</label>
-                  <input
-                    type="text"
-                    name="ageRange"
-                    value={product.specifications.ageRange}
-                    onChange={handleSpecificationChange}
-                    placeholder="e.g., 18-65, All Ages"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
               
-              <div className="mt-4">
-                <label className="block text-gray-700 font-semibold mb-2">Ingredients (comma separated)</label>
-                <textarea
-                  value={product.specifications.ingredients.join(', ')}
-                  onChange={handleIngredientsChange}
-                  rows="3"
-                  placeholder="e.g., Water, Glycerin, Hyaluronic Acid"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              {/* Existing Images */}
+              {uploadedImages.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-md font-semibold text-gray-700 mb-3">Current Images:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {uploadedImages.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.url}
+                          alt={image.alt || `Product image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border shadow-sm"
+                          onError={(e) => {
+                            e.target.src = `https://via.placeholder.com/200x150/e2e8f0/64748b?text=Image+${index + 1}`;
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Upload New Images */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload New Images (optional)
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setImages(Array.from(e.target.files))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select multiple image files to upload (JPEG, PNG, WebP)
+                  </p>
+                </div>
+
+                {/* New Image Previews */}
+                {images.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">New Images to Upload:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`New image ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border shadow-sm"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+                            {image.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-sm text-gray-500">
+                  💡 <strong>Tip:</strong> You can keep existing images and upload new ones. New images will be added to the product.
+                </div>
               </div>
             </div>
 

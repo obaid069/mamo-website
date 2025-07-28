@@ -81,13 +81,6 @@ const productSchema = new mongoose.Schema({
   },
   reviews: [reviewSchema],
   tags: [String],
-  specifications: {
-    weight: String,
-    dimensions: String,
-    ingredients: [String],
-    skinType: String,
-    ageRange: String
-  },
   isFeatured: {
     type: Boolean,
     default: false
