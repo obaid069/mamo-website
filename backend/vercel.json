@@ -1,4 +1,5 @@
 {
+  "name": "mamo_backend",
   "version": 2,
   "builds": [
     {
