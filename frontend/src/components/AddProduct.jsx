@@ -14,12 +14,10 @@ function AddProduct() {
   const [category, setCategory] = useState('');
   const [countInStock, setCountInStock] = useState('');
   const [categories, setCategories] = useState([]);
-  const [images, setImages] = useState([]);
-  const [uploadedImages, setUploadedImages] = useState([]);
+  const [imageUrls, setImageUrls] = useState(['']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const navigate = useNavigate();
 
   // Fetch categories when component mounts
@@ -37,42 +35,19 @@ function AddProduct() {
     fetchCategories();
   }, []);
 
-  const handleImageUpload = async () => {
-    if (images.length === 0) return [];
-    setUploadingImages(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Login pehle karo! Token missing hai.');
-      }
+  const addImageUrl = () => {
+    setImageUrls([...imageUrls, '']);
+  };
 
-      const uploaded = [];
-      for (const image of images) {
-        const formData = new FormData();
-        formData.append('image', image);
+  const updateImageUrl = (index, url) => {
+    const newUrls = [...imageUrls];
+    newUrls[index] = url;
+    setImageUrls(newUrls);
+  };
 
-        const response = await axios.post(`${API_URL}/products/upload`, formData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-
-        uploaded.push({
-          url: response.data.image,
-          alt: name
-        });
-      }
-
-      setUploadedImages(uploaded);
-      return uploaded;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      setError(error.message || 'Image upload mein masla hua!');
-      return [];
-    } finally {
-      setUploadingImages(false);
-    }
+  const removeImageUrl = (index) => {
+    const newUrls = imageUrls.filter((_, i) => i !== index);
+    setImageUrls(newUrls.length > 0 ? newUrls : ['']);
   };
 
   const handleSubmit = async (e) => {
@@ -81,8 +56,11 @@ function AddProduct() {
     setSuccess('');
     setLoading(true);
 
-    // Upload images first
-    const uploaded = await handleImageUpload();
+    // Process image URLs
+    const validImageUrls = imageUrls.filter(url => url.trim() !== '').map(url => ({
+      url: url.trim(),
+      alt: name
+    }));
 
     // Validation
     if (!name.trim() || !description.trim() || !price || !brand.trim() || !category || !countInStock) {
@@ -108,7 +86,7 @@ function AddProduct() {
         brand: brand.trim(),
         category: category,
         countInStock: parseInt(countInStock),
-        images: uploaded
+        images: validImageUrls
       };
 
       console.log('Sending product data:', productData);
@@ -131,8 +109,7 @@ function AddProduct() {
       setBrand('');
       setCategory('');
       setCountInStock('');
-      setImages([]);
-      setUploadedImages([]);
+      setImageUrls(['']);
       
       // Navigate after 2 seconds
       setTimeout(() => {
@@ -260,17 +237,57 @@ function AddProduct() {
           {/* Product Images */}
           <div>
             <label className="block text-gray-700 font-semibold mb-2">Product Images</label>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => setImages([...e.target.files])}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            />
-            <p className="text-sm text-gray-500 mt-1">Multiple images select kar sakte hain</p>
-            {uploadingImages && (
-              <div className="mt-2 text-blue-600">
-                <span>Images upload ho rahi hain...</span>
+            <div className="space-y-3">
+              {imageUrls.map((url, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => updateImageUrl(index, e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImageUrl(index)}
+                    className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    disabled={imageUrls.length === 1}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addImageUrl}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                + Add Another URL
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">Enter image URLs (e.g., from CDN, cloud storage, or external sources)</p>
+            
+            {/* Image Previews */}
+            {imageUrls.filter(url => url.trim() !== '').length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Image Preview:</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {imageUrls.filter(url => url.trim() !== '').map((url, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border shadow-sm"
+                        onError={(e) => {
+                          e.target.src = `https://via.placeholder.com/200x150/e2e8f0/64748b?text=Invalid+URL`;
+                        }}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
+                        Image {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

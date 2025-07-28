@@ -19,11 +19,10 @@ function EditProduct() {
     tags: []
   });
   const [categories, setCategories] = useState([]);
-  const [images, setImages] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
@@ -69,44 +68,13 @@ function EditProduct() {
     }));
   };
 
-  const handleImageUpload = async () => {
-    if (images.length === 0) return uploadedImages; // Return existing images if no new images
-    setUploadingImages(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Login pehle karo! Token missing hai.');
-      }
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
+  };
 
-      const uploaded = [];
-      for (const image of images) {
-        const formData = new FormData();
-        formData.append('image', image);
-
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/products/upload`, formData, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-
-        uploaded.push({
-          url: response.data.image,
-          alt: product.name
-        });
-      }
-
-      // Combine existing images with new uploaded images
-      const combinedImages = [...uploadedImages, ...uploaded];
-      setUploadedImages(combinedImages);
-      return combinedImages;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      setError(error.message || 'Image upload mein masla hua!');
-      return uploadedImages; // Return existing images on error
-    } finally {
-      setUploadingImages(false);
-    }
+  const removeSelectedFile = (index) => {
+    setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
 
   const removeExistingImage = (index) => {
@@ -128,8 +96,38 @@ function EditProduct() {
         return;
       }
 
-      // First upload new images if any
-      const finalImages = await handleImageUpload();
+      let newImageUrls = [];
+      
+      // Upload new files if any are selected
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+
+        try {
+          const uploadResponse = await axios.post(
+            `${import.meta.env.VITE_API_URL}/upload`,
+            formData,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+              }
+            }
+          );
+          
+          newImageUrls = uploadResponse.data.imageUrls || [];
+          console.log('New uploaded images:', newImageUrls);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          setError('Images upload karne mein masla hua!');
+          return;
+        }
+      }
+      
+      // Combine existing images with newly uploaded images
+      const finalImages = [...uploadedImages, ...newImageUrls];
 
       // Prepare data for update including images
       const updateData = {
@@ -345,7 +343,7 @@ function EditProduct() {
                     {uploadedImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={image.url}
+                          src={image.url.startsWith('http') ? image.url : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${image.url}`}
                           alt={image.alt || `Product image ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border shadow-sm"
                           onError={(e) => {
@@ -365,38 +363,54 @@ function EditProduct() {
                 </div>
               )}
 
-              {/* Upload New Images */}
+              {/* Add New Images by File Upload */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload New Images (optional)
+                    Upload New Images
                   </label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => setImages(Array.from(e.target.files))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Select multiple image files to upload (JPEG, PNG, WebP)
-                  </p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      📁 Select Images
+                    </label>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Choose multiple images to upload (JPG, PNG, GIF, etc.)
+                    </p>
+                  </div>
                 </div>
 
-                {/* New Image Previews */}
-                {images.length > 0 && (
+                {/* Selected Files Preview */}
+                {selectedFiles.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">New Images to Upload:</h4>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files ({selectedFiles.length}):</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {images.map((image, index) => (
+                      {selectedFiles.map((file, index) => (
                         <div key={index} className="relative">
                           <img
-                            src={URL.createObjectURL(image)}
-                            alt={`New image ${index + 1}`}
+                            src={URL.createObjectURL(file)}
+                            alt={`Selected image ${index + 1}`}
                             className="w-full h-32 object-cover rounded-lg border shadow-sm"
                           />
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedFile(index)}
+                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+                          >
+                            ✕
+                          </button>
                           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg truncate">
-                            {image.name}
+                            {file.name}
                           </div>
                         </div>
                       ))}
@@ -405,7 +419,7 @@ function EditProduct() {
                 )}
 
                 <div className="text-sm text-gray-500">
-                  💡 <strong>Tip:</strong> You can keep existing images and upload new ones. New images will be added to the product.
+                  💡 <strong>Tip:</strong> You can keep existing images and upload new ones. Selected files will be uploaded when you update the product.
                 </div>
               </div>
             </div>

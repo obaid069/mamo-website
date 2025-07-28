@@ -11,19 +11,22 @@ function AdminProductCard({ product, onDelete }) {
     }
 
     const firstImage = product.images[0];
+    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
     
     // Handle object format {url: '', alt: ''}
     if (typeof firstImage === 'object' && firstImage?.url) {
-      return firstImage.url.startsWith('http') 
-        ? firstImage.url 
-        : `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
+      const imageUrl = firstImage.url;
+      return imageUrl.startsWith('http') 
+        ? imageUrl 
+        : `${baseUrl}${imageUrl}`;
     }
     
     // Handle string format
     if (typeof firstImage === 'string') {
-      return firstImage.startsWith('http') 
-        ? firstImage 
-        : `https://via.placeholder.com/400x300/e2e8f0/64748b?text=${encodeURIComponent(product.name.substring(0, 15))}`;
+      const imageUrl = firstImage;
+      return imageUrl.startsWith('http') 
+        ? imageUrl 
+        : `${baseUrl}${imageUrl}`;
     }
     
     // Final fallback
