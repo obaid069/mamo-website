@@ -168,7 +168,13 @@ const updateProduct = async (req, res) => {
       // Handle image updates
       if (req.body.images && Array.isArray(req.body.images)) {
         const processedImages = req.body.images
-          .filter(img => img && img.trim() !== '') // Remove empty URLs
+          .filter(img => {
+            // Handle both string and object formats
+            if (typeof img === 'string') {
+              return img.trim() !== '';
+            }
+            return img && img.url && img.url.trim() !== '';
+          })
           .map(img => {
             if (typeof img === 'string') {
               return {
@@ -178,7 +184,8 @@ const updateProduct = async (req, res) => {
             }
             return {
               url: img.url && img.url.startsWith('http') ? img.url : `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(product.name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
-              alt: img.alt || product.name
+              alt: img.alt || product.name,
+              public_id: img.public_id // Preserve Cloudinary public_id if present
             };
           });
         
@@ -194,8 +201,8 @@ const updateProduct = async (req, res) => {
       res.status(404).json({ message: 'Product not found' });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Update product error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

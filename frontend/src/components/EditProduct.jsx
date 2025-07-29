@@ -108,6 +108,9 @@ function EditProduct() {
 
         try {
           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+          console.log('Uploading to:', `${API_URL}/products/upload`);
+          console.log('FormData files:', selectedFiles.length);
+          
           const uploadResponse = await axios.post(
             `${API_URL}/products/upload`,
             formData,
@@ -115,21 +118,39 @@ function EditProduct() {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'multipart/form-data'
-              }
+              },
+              timeout: 30000 // 30 seconds timeout
             }
           );
           
+          console.log('Upload response:', uploadResponse.data);
           newImageUrls = uploadResponse.data.imageUrls || [];
           console.log('New uploaded images:', newImageUrls);
         } catch (uploadError) {
           console.error('Image upload error:', uploadError);
-          setError('Images upload karne mein masla hua!');
+          console.error('Upload error response:', uploadError.response?.data);
+          console.error('Upload error status:', uploadError.response?.status);
+          
+          let errorMessage = 'Images upload karne mein masla hua!';
+          if (uploadError.response?.data?.message) {
+            errorMessage = uploadError.response.data.message;
+          } else if (uploadError.message?.includes('timeout')) {
+            errorMessage = 'Upload timeout - please try with smaller images or fewer files at once';
+          } else if (uploadError.message?.includes('Network Error')) {
+            errorMessage = 'Network error - please check your internet connection';
+          }
+          
+          setError(errorMessage);
+          setLoading(false);
           return;
         }
       }
       
       // Combine existing images with newly uploaded images
+      console.log('Existing images:', uploadedImages);
+      console.log('New images:', newImageUrls);
       const finalImages = [...uploadedImages, ...newImageUrls];
+      console.log('Final combined images:', finalImages);
 
       // Prepare data for update including images
       const updateData = {
@@ -346,8 +367,16 @@ function EditProduct() {
                     {uploadedImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={image.url.startsWith('http') ? image.url : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${image.url}`}
-                          alt={image.alt || `Product image ${index + 1}`}
+                          src={(() => {
+                            // Handle different image formats
+                            if (typeof image === 'string') {
+                              return image.startsWith('http') ? image : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${image.startsWith('/') ? image : '/' + image}`;
+                            } else if (image && image.url) {
+                              return image.url.startsWith('http') ? image.url : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${image.url.startsWith('/') ? image.url : '/' + image.url}`;
+                            }
+                            return `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlICR7aW5kZXggKyAxfTwvdGV4dD48L3N2Zz4=`;
+                          })()} 
+                          alt={(typeof image === 'object' && image.alt) || `Product image ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border shadow-sm"
                           onError={(e) => {
                             e.target.src = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY0NzQ4YiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlICR7aW5kZXggKyAxfTwvdGV4dD48L3N2Zz4=`;
