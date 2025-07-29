@@ -107,17 +107,17 @@ const createProduct = async (req, res) => {
       if (typeof img === 'string') {
         // If it's just a URL string, convert to object format
         return {
-          url: img.startsWith('http') ? img : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+          url: img.startsWith('http') ? img : `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
           alt: name
         };
       }
       // If it's already an object, ensure URL is valid
       return {
-        url: img.url && img.url.startsWith('http') ? img.url : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+        url: img.url && img.url.startsWith('http') ? img.url : `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
         alt: img.alt || name
       };
     }) : [{
-      url: `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(name.substring(0, 20))}`,
+      url: `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
       alt: name
     }];
 
@@ -172,18 +172,18 @@ const updateProduct = async (req, res) => {
           .map(img => {
             if (typeof img === 'string') {
               return {
-                url: img.startsWith('http') ? img : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+                url: img.startsWith('http') ? img : `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(product.name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
                 alt: product.name
               };
             }
             return {
-              url: img.url && img.url.startsWith('http') ? img.url : `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+              url: img.url && img.url.startsWith('http') ? img.url : `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(product.name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
               alt: img.alt || product.name
             };
           });
         
         product.images = processedImages.length > 0 ? processedImages : [{
-          url: `https://via.placeholder.com/400x300/f8fafc/64748b?text=${encodeURIComponent(product.name.substring(0, 20))}`,
+          url: `https://placehold.co/400x300/f8fafc/64748b/png?text=${encodeURIComponent(product.name.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '+'))}`,
           alt: product.name
         }];
       }
