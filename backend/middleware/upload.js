@@ -1,3 +1,7 @@
+// NOTE: This file is for LOCAL storage upload (not currently used)
+// The project uses Cloudinary for image uploads instead
+// See: config/cloudinary.js for actual image upload configuration
+
 const multer = require('multer');
 const path = require('path');
 

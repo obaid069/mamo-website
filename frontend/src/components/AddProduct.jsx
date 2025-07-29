@@ -15,6 +15,8 @@ function AddProduct() {
   const [countInStock, setCountInStock] = useState('');
   const [categories, setCategories] = useState([]);
   const [imageUrls, setImageUrls] = useState(['']);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,47 @@ function AddProduct() {
   const removeImageUrl = (index) => {
     const newUrls = imageUrls.filter((_, i) => i !== index);
     setImageUrls(newUrls.length > 0 ? newUrls : ['']);
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setImageFiles(files);
+  };
+
+  // Upload images to Cloudinary
+  const uploadImagesToCloudinary = async () => {
+    if (imageFiles.length === 0) return [];
+    
+    setUploadingImages(true);
+    const uploadedUrls = [];
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      for (const file of imageFiles) {
+        const formData = new FormData();
+        formData.append('images', file);
+        
+        const response = await axios.post(`${API_URL}/products/upload`, formData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        if (response.data.imageUrls && response.data.imageUrls.length > 0) {
+          uploadedUrls.push(...response.data.imageUrls);
+        }
+      }
+      
+      return uploadedUrls;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      throw new Error('Images upload nahi ho sake');
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -237,7 +280,66 @@ function AddProduct() {
           {/* Product Images */}
           <div>
             <label className="block text-gray-700 font-semibold mb-2">Product Images</label>
-            <div className="space-y-3">
+            
+            {/* File Upload Section */}
+            <div className="mb-4 p-4 border-2 border-dashed border-blue-300 rounded-lg">
+              <div className="text-center">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="mb-3"
+                  id="imageFiles"
+                />
+                <label htmlFor="imageFiles" className="block text-sm text-gray-600 mb-2">
+                  📁 Select images from your computer (Multiple files allowed)
+                </label>
+                {imageFiles.length > 0 && (
+                  <div className="text-sm text-green-600 mb-2">
+                    ✅ {imageFiles.length} file(s) selected
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const uploadedImages = await uploadImagesToCloudinary();
+                      if (uploadedImages.length > 0) {
+                        const newUrls = uploadedImages.map(img => img.url);
+                        setImageUrls(prev => [...prev.filter(url => url.trim() !== ''), ...newUrls]);
+                        setSuccess(`${uploadedImages.length} images uploaded successfully!`);
+                        setImageFiles([]);
+                        document.getElementById('imageFiles').value = '';
+                      }
+                    } catch (error) {
+                      setError(error.message);
+                    }
+                  }}
+                  disabled={imageFiles.length === 0 || uploadingImages}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    imageFiles.length === 0 || uploadingImages
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {uploadingImages ? '⏳ Uploading...' : '☁️ Upload to Cloudinary'}
+                </button>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">OR</span>
+              </div>
+            </div>
+            
+            {/* URL Input Section */}
+            <div className="space-y-3 mt-4">
+              <h4 className="text-sm font-medium text-gray-700">Add Image URLs manually:</h4>
               {imageUrls.map((url, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <input
@@ -265,7 +367,7 @@ function AddProduct() {
                 + Add Another URL
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-2">Enter image URLs (e.g., from CDN, cloud storage, or external sources)</p>
+            <p className="text-sm text-gray-500 mt-2">💡 You can either upload files directly or enter image URLs</p>
             
             {/* Image Previews */}
             {imageUrls.filter(url => url.trim() !== '').length > 0 && (
